@@ -9,6 +9,8 @@
   
 - 登録されて5分以上経過して、メモリのメトリクスが取得できていないインスタンスが存在する場合にOrg名と登録名をSlackに通知する
 
+- 通知結果例
+
 ![Alt Text](https://github.com/yhidetoshi/Pictures/raw/master/mackerel/mackerel-slack-notice.png)
 
 
