@@ -125,7 +125,7 @@ func (hp *HostParams) FetchHostID() {
 	hostsProd, err := client.FindHosts(
 		&mackerel.FindHostsParam{
 			Service:  "prod",
-			Roles:    []string{"weba", "bastion"},
+			Roles:    []string{"web", "bastion"},
 			Statuses: []string{"working"},
 		},
 	)
