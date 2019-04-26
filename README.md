@@ -23,8 +23,12 @@
 username = os.Getenv("USERNAME")
 slackURL = os.Getenv("SLACKURL")
 mkrKey   = os.Getenv("MKRKEY")
-STRROLE: web,bastion
-PRODROLE: web,bastion
+strRole  = os.Getenv("STRROLE")
+prodRole = os.Getenv("PRODROLE")
 ```
+- ROLEをカンマ区切りで環境変数にセットする
+  - STRROLE: web,bastion
+  - PRODROLE: web,bastion
+
 
 AWS LambdaにGoランタイムで実行する。定期実行はCloudWatch Eventと連携してcron実行させる。
