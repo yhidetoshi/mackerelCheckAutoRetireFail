@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ashwanthkumar/slack-go-webhook"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mackerelio/mackerel-client-go"
 )
 
@@ -18,6 +20,8 @@ var (
 	username = os.Getenv("USERNAME")
 	slackURL = os.Getenv("SLACKURL")
 	mkrKey   = os.Getenv("MKRKEY")
+	strRole  = os.Getenv("STRROLE")
+	prodRole = os.Getenv("PRODROLE")
 	client   = mackerel.NewClient(mkrKey)
 )
 
@@ -52,6 +56,10 @@ type OrgName struct {
 }
 
 func main() {
+	lambda.Start(Handler)
+}
+
+func Handler(ctx context.Context) {
 	var errorCount int
 	var errorHostList []string
 	var result float64
@@ -71,14 +79,13 @@ func main() {
 	errorCount = 0
 
 	for _, hostId := range hp.hostIDs {
-		//result = hmp.FetchMetricsValues("3AtUb5m8gAAAAA")
 		result = hmp.FetchMetricsValues(hostId)
 
 		if result == 0 {
 			hostName := fetchHostname(hostId)
-			fmt.Printf("%s\n", hostName)
-			errorCount += 1
+			fmt.Println(hostName)
 			errorHostList = append(errorHostList, hostName)
+			errorCount += 1
 		}
 	}
 
@@ -86,6 +93,7 @@ func main() {
 		failHosts := strings.Join(errorHostList, ",")
 		PostSlack(oi.orgname, failHosts)
 	}
+	fmt.Println(errorHostList)
 }
 
 func fetchHostname(hostId string) string {
@@ -118,14 +126,24 @@ func (oi *OrgInfo) fetchOrgname() {
 
 // 全host-idを習得
 func (hp *HostParams) FetchHostID() {
+
+	var listStrRole []string
+	listStrRole = strings.Split(strRole, ",")
+	//fmt.Println(listStrRole)
+
+	var listProdRole []string
+	listProdRole = strings.Split(prodRole, ",")
+	//fmt.Println(listStrRole)
+
 	// Service=prodのインスタンスを取得
 	basicTime := time.Now().Add(-5 * time.Minute)
 	hp.basicUnixTime = basicTime.Unix()
 
 	hostsProd, err := client.FindHosts(
 		&mackerel.FindHostsParam{
-			Service:  "prod",
-			Roles:    []string{"web", "bastion"},
+			Service: "prod",
+			//Roles:    []string{"web","bastion"},
+			Roles:    listStrRole,
 			Statuses: []string{"working"},
 		},
 	)
@@ -137,8 +155,9 @@ func (hp *HostParams) FetchHostID() {
 	// Service=stgのインスタンスを取得
 	hostsStg, err := client.FindHosts(
 		&mackerel.FindHostsParam{
-			Service:  "stg",
-			Roles:    []string{"web", "bastion"},
+			Service: "stg",
+			//Roles:    []string{"web","bastion"},
+			Roles:    listProdRole,
 			Statuses: []string{"working"},
 		},
 	)
@@ -166,7 +185,6 @@ func (hp *HostParams) FetchHostID() {
 	}
 }
 
-//func calcTotalCPUPercentPerItem(cv []CPUValue) float64 {
 func convertFloat64(mv []MemValue) float64 {
 	var value float64
 	for i := range mv {
@@ -206,8 +224,7 @@ func (hmp *HostMetricsParams) FetchMetricsValues(strHostID string) float64 {
 		memValue = convertFloat64(metricsMemValue)
 
 	}
-	//fmt.Println(memValue)
-	//fmt.Printf("%T", memValue[0])
+
 	return memValue
 }
 
